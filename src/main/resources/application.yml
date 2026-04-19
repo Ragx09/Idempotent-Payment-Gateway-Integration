@@ -1,0 +1,34 @@
+# Idempotent Payment Gateway Integration microservice:
+# - REST payments: Idempotency-Key + Redis cache + distributed locks
+# - Webhooks: HMAC X-Webhook-Signature, persisted events, scheduled retries (payment.webhook.*)
+# - Ledger: Postgres + pessimistic account locks; validated under 4K+ concurrent requests (k6)
+spring:
+  application:
+    name: idempotent-payment-gateway
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres_db
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true # see lock actually working
+    hibernate:
+      ddl-auto: validate # flyway auto-create the schema
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+payment:
+  webhook:
+    secret: ${WEBHOOK_SECRET:change-me-in-production}
+    max-attempts: 8
+    retry-interval-ms: 5000
